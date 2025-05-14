@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 const projectId = process.env.PROJECT_ID;
 const clientEmail = process.env.CLIENT_EMAIL;
 const privateKey = process.env.PRIVATE_KEY.replace(/\\n/g, '\n');
-const spreadsheetId = process.env.SPREADSHEET_ID;
+const spreadsheetId = process.env.SPREADSHEET_ID1TwVvcisEawBftNnjwa8E-i8DBEtDbuNvrOiHFzhKJJg;
 
 // Configura autenticação do Google Sheets
 const auth = new google.auth.GoogleAuth({
