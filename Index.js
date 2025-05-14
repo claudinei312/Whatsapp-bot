@@ -1,65 +1,65 @@
-import venom from 'venom-bot';
-import { google } from 'googleapis';
+import { google } from "googleapis";
+import { GoogleAuth } from "google-auth-library";
 
-// Pega as variáveis do ambiente
-const projectId = process.env.PROJECT_ID;
-const clientEmail = process.env.CLIENT_EMAIL;
-const privateKey = process.env.PRIVATE_KEY.replace(/\\n/g, '\n');
-const spreadsheetId = process.env.SPREADSHEET_ID1TwVvcisEawBftNnjwa8E-i8DBEtDbuNvrOiHFzhKJJg;
+export default async function handler(req, res) {
+  try {
+    const auth = new GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      },
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
 
-// Configura autenticação do Google Sheets
-const auth = new google.auth.GoogleAuth({
-  credentials: {
-    project_id: projectId,
-    client_email: clientEmail,
-    private_key: privateKey,
-  },
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-});
+    const sheets = google.sheets({ version: "v4", auth });
 
-const sheets = google.sheets({ version: 'v4', auth });
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+    const range = "Página1!A2:D";
 
-async function readMessages() {
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: 'A2:D', // exemplo, ajusta conforme sua planilha
-  });
-  return res.data.values || [];
-}
+    const getRows = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range,
+    });
 
-async function sendWhatsAppMessages(client) {
-  const messages = await readMessages();
+    const rows = getRows.data.values;
 
-  for (const [nome, telefone, frase, status] of messages) {
-    if (status !== 'Enviado') {
-      const number = telefone.replace(/\D/g, '') + '@c.us'; // formata número para WhatsApp
-      const message = `Olá ${nome}, ${frase}`;
+    if (!rows || rows.length === 0) {
+      return res.status(200).json({ message: "Sem dados na planilha." });
+    }
 
-      try {
-        await client.sendText(number, message);
-        console.log(`Mensagem enviada para ${nome}`);
+    let enviados = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const [nome, telefone, frase, status] = rows[i];
 
-        // Atualiza planilha marcando como enviado
-        const rowIndex = messages.indexOf([nome, telefone, frase, status]) + 2;
+      if (status !== "ENVIADO") {
+        console.log(`Enviando para ${nome} (${telefone}) - ${frase}`);
+
+        // Simula envio aqui. Substitua por integração com Venom Bot
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 segundo por contato
+
+        // Atualiza status na planilha
         await sheets.spreadsheets.values.update({
           spreadsheetId,
-          range: `D${rowIndex}`,
-          valueInputOption: 'RAW',
-          requestBody: { values: [['Enviado']] },
+          range: `Página1!D${i + 2}`,
+          valueInputOption: "RAW",
+          requestBody: {
+            values: [["ENVIADO"]],
+          },
         });
-      } catch (e) {
-        console.error(`Erro ao enviar para ${nome}:`, e.message);
-      }
 
-      // Pausa de 1 minuto entre mensagens (1000ms * 60)
-      await new Promise((r) => setTimeout(r, 60000));
+        enviados++;
+
+        // Pausa de 20 minutos a cada 30 mensagens
+        if (enviados % 30 === 0) {
+          console.log("Pausando por 20 minutos...");
+          await new Promise((resolve) => setTimeout(resolve, 20 * 60 * 1000));
+        }
+      }
     }
+
+    res.status(200).json({ message: "Mensagens processadas com sucesso!" });
+  } catch (error) {
+    console.error("Erro:", error);
+    res.status(500).json({ error: "Erro ao enviar mensagens." });
   }
 }
-
-venom.create().then((client) => {
-  console.log('WhatsApp conectado');
-  sendWhatsAppMessages(client);
-}).catch((err) => {
-  console.error('Erro ao conectar WhatsApp:', err);
-});
