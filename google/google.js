@@ -10,10 +10,4 @@ const auth = new google.auth.GoogleAuth({
 
 const sheets = google.sheets({ version: 'v4', auth });
 
-export async function getSheetData(spreadsheetId, range) {
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range,
-  });
-  return response.data.values;
-}
+export default sheets;
