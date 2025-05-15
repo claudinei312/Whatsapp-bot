@@ -1,8 +1,13 @@
 {
   "name": "whatsapp-bot",
   "version": "1.0.0",
-  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
-    "googleapis": "^128.0.0"
-  }
+    "venom-bot": "^4.0.30",
+    "googleapis": "^109.0.0"
+  },
+  "type": "module"
 }
